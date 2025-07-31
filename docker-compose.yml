@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  kepler-auth-go:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=auth05
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_SSLMODE=disable
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - JWT_EXPIRATION=86400
+      - GIN_MODE=release
+      - PORT=8000
+      - HOST=0.0.0.0
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - kepler-network
+
+  db:
+    image: postgres:15.4-alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=auth05
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - kepler-network
+
+volumes:
+  postgres_data:
+
+networks:
+  kepler-network:
+    driver: bridge
